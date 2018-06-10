@@ -8,3 +8,13 @@ c:\users\jfrye\Source\repos\UWBPlotter_Forms\UWBPlotter_Forms\obj\Debug\UWBPlott
 c:\users\jfrye\Source\repos\UWBPlotter_Forms\UWBPlotter_Forms\obj\Debug\UWBPlotter_Forms.exe
 c:\users\jfrye\Source\repos\UWBPlotter_Forms\UWBPlotter_Forms\obj\Debug\UWBPlotter_Forms.pdb
 c:\users\jfrye\Source\repos\UWBPlotter_Forms\UWBPlotter_Forms\obj\Debug\UWBPlotter_Forms.Plot1.resources
+C:\GitHub\decastreamerwindowsforms\UWBPlotter_Forms\bin\Debug\UWBPlotter_Forms.exe.config
+C:\GitHub\decastreamerwindowsforms\UWBPlotter_Forms\bin\Debug\UWBPlotter_Forms.exe
+C:\GitHub\decastreamerwindowsforms\UWBPlotter_Forms\bin\Debug\UWBPlotter_Forms.pdb
+C:\GitHub\decastreamerwindowsforms\UWBPlotter_Forms\obj\Debug\UWBPlotter_Forms.csprojResolveAssemblyReference.cache
+C:\GitHub\decastreamerwindowsforms\UWBPlotter_Forms\obj\Debug\UWBPlotter_Forms.Plot1.resources
+C:\GitHub\decastreamerwindowsforms\UWBPlotter_Forms\obj\Debug\UWBPlotter_Forms.Properties.Resources.resources
+C:\GitHub\decastreamerwindowsforms\UWBPlotter_Forms\obj\Debug\UWBPlotter_Forms.csproj.GenerateResource.cache
+C:\GitHub\decastreamerwindowsforms\UWBPlotter_Forms\obj\Debug\UWBPlotter_Forms.csproj.CoreCompileInputs.cache
+C:\GitHub\decastreamerwindowsforms\UWBPlotter_Forms\obj\Debug\UWBPlotter_Forms.exe
+C:\GitHub\decastreamerwindowsforms\UWBPlotter_Forms\obj\Debug\UWBPlotter_Forms.pdb

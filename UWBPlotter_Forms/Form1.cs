@@ -1,12 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
 using System.IO.Ports;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Threading;
 using System.Windows.Forms;
 
 namespace UWBPlotter_Forms
@@ -18,7 +14,8 @@ namespace UWBPlotter_Forms
         double scalingFactor;
         double x0;
         double y0;
-        SerialPort sp = new SerialPort();
+        static SerialPort sp = new SerialPort();
+        static string line;
         bool _continue = true;
         double modifiedAlpha;
         double alpha = 0;
@@ -30,9 +27,12 @@ namespace UWBPlotter_Forms
         //Graphics formGraphics;
         double[] tempPrevCoords = new double[2];
         double[] tempCurrentCoords = new double[2];
+        private string buffer { get; set; }
+        private SerialPort _port { get; set; }
         public Plot1()
         {
             InitializeComponent();
+            buffer = string.Empty;
             screenHeight = 800;
             screenWidth = 1000;
             scalingFactor = screenWidth / 15;
@@ -76,112 +76,137 @@ namespace UWBPlotter_Forms
 
         protected void button1_Click(object sender, EventArgs e)
         {
-            bool isFirstTime = true;
-            bool isSecondTime = false;
-            string line;
-
+            //bool isFirstTime = true;
+            //bool isSecondTime = false;
+            
+            //Thread readThread = new Thread(Read);
             // set some port parameters
             sp.BaudRate = 115200;
-            //sp.DataBits = 8;
-            //sp.Parity = Parity.None;
-            //sp.StopBits = StopBits.One;
-            sp.ReadTimeout = 2000;
-            sp.PortName = "COM8";
+            sp.DataBits = 8;
+            sp.Parity = Parity.None;
+            sp.StopBits = StopBits.One;
+            sp.Handshake = Handshake.XOnXOff;
+            sp.ReadTimeout = 500;
+            sp.WriteTimeout = 500;
+            sp.PortName = "COM5";
             try
             {
                 sp.Open();
+                sp.DiscardInBuffer();
+                sp.DataReceived += new SerialDataReceivedEventHandler(dataReceived);
+                System.Threading.Thread.Sleep(1000);
+                sp.Write("\r\r");
+                System.Threading.Thread.Sleep(1000);
+                sp.Write("lep\r");
+                //readThread.Start();
             }
             catch
             {
-                //MessageBox.Show("Error opening serial port");
+                MessageBox.Show("Error opening serial port; CLOSE PUTTY :)");
                 return;
             }
-            int i = 0;
-            while (true)
-            {
-                try
-                {
-                    line = sp.ReadLine();  // Will read until carriage-return
-                    ProcessLine(line); // Your method to parse the line
-                    isFirstTime = false;
-                    sp.DiscardInBuffer();
-                }
-                catch
-                {
-                    sp.Write("\r");
-                    if (isSecondTime)
-                    {
-                        isFirstTime = false;
-                        continue;
-                    }
-                    if (isFirstTime)
-                    {
-                        //sp.Close();
-                        //sp.Open();
-                        System.Threading.Thread.Sleep(500);
-                        sp.Write("nmt\r\r");
-                        System.Threading.Thread.Sleep(2000);
-                        sp.Write("lep\r");
-                    }
-                    System.Threading.Thread.Sleep(20);
-                    isSecondTime = false;
-                    isFirstTime = false;
-                }
-            }
-            sp.Close();
+            //while (true)
+            //{
+            //    try
+            //    {
+            //        line = sp.ReadLine();  // Will read until carriage-return
+            //        if (line != "\r")
+            //            ProcessLine(line); // Your method to parse the line
+            //        //isFirstTime = false;
+            //        //sp.DiscardInBuffer();
+            //    }
+            //    catch
+            //    {
+            //        //sp.Write("\r");
+            //        //if (isSecondTime)
+            //        //{
+            //        //    isFirstTime = false;
+            //        //    continue;
+            //        //}
+            //        //if (isFirstTime)
+            //        //{
+            //        //    //sp.Close();
+            //        //    //sp.Open();
+            //        //    System.Threading.Thread.Sleep(500);
+            //        //    sp.Write("nmt\r\r");
+            //        //    System.Threading.Thread.Sleep(2000);
+            //        //    sp.Write("lep\r");
+            //        //}
+            //        //System.Threading.Thread.Sleep(20);
+            //        //isSecondTime = false;
+            //        //isFirstTime = false;
+            //    }
+            //}
         }
+        
+        private void dataReceived(object sender, SerialDataReceivedEventArgs e)
+        {
+            buffer += sp.ReadExisting();
 
+            //test for termination character in buffer
+            //if (buffer.Contains("\r\n"))
+            {
+                ProcessLine(buffer);
+            }
+        }
         public void ProcessLine(string line)
         {
             //POS[10, 2, 3, 100]
             //POS,6.63,3.74,-1.86,100
-
+            System.Diagnostics.Debug.WriteLine(line);
             if (line != "")
             {
                 string[] coords = line.Split(',');
-                double xCoordCurrent = double.Parse(coords[1]);
-                double yCoordCurrent = double.Parse(coords[2]);
-                double zCoordCurrent = double.Parse(coords[3]);
-                int confid = int.Parse(coords[4]);
-                modifiedAlpha = (1 - alpha) * confid / 100;
-                if (isFirstTimeRead)
+                if (coords.Length == 5)
+                {
+                    
+                    double xCoordCurrent = double.Parse(coords[1]);
+                    double yCoordCurrent = double.Parse(coords[2]);
+                    double zCoordCurrent = double.Parse(coords[3]);
+                    int confid = int.Parse(coords[4]);
+                    modifiedAlpha = (1 - alpha) * confid / 100;
+                    if (isFirstTimeRead)
+                        modifiedAlpha = 1;
                     modifiedAlpha = 1;
-                modifiedAlpha = 1;
-                xCoord = xCoordCurrent * (modifiedAlpha) + xCoord * (1 - modifiedAlpha);
-                yCoord = yCoordCurrent * (modifiedAlpha) + yCoord * (1 - modifiedAlpha);
-                //formGraphics = this.CreateGraphics();
-                tempPrevCoords[0] = xtempPrev;
-                tempPrevCoords[1] = ytempPrev;
-                int[] scaledPrevPoint = scalePoint(tempPrevCoords);
-                tempCurrentCoords[0] = xCoord;
-                tempCurrentCoords[1] = yCoord;
-                int[] scaledCurrentPoint = scalePoint(tempCurrentCoords);
+                    xCoord = xCoordCurrent * (modifiedAlpha) + xCoord * (1 - modifiedAlpha);
+                    yCoord = yCoordCurrent * (modifiedAlpha) + yCoord * (1 - modifiedAlpha);
+                    //formGraphics = this.CreateGraphics();
+                    tempPrevCoords[0] = xtempPrev;
+                    tempPrevCoords[1] = ytempPrev;
+                    int[] scaledPrevPoint = scalePoint(tempPrevCoords);
+                    tempCurrentCoords[0] = xCoord;
+                    tempCurrentCoords[1] = yCoord;
+                    int[] scaledCurrentPoint = scalePoint(tempCurrentCoords);
 
-                System.Drawing.Pen myPen = new System.Drawing.Pen(System.Drawing.Color.Red);
-                System.Drawing.Graphics formGraphics;
-                formGraphics = this.CreateGraphics();
-                formGraphics.DrawLine(myPen, scaledPrevPoint[0], scaledPrevPoint[1], scaledCurrentPoint[0], scaledCurrentPoint[1]);
-                myPen.Dispose();
-                formGraphics.Dispose();
+                    System.Drawing.Pen myPen = new System.Drawing.Pen(System.Drawing.Color.Red);
+                    System.Drawing.Graphics formGraphics;
+                    formGraphics = this.CreateGraphics();
+                    formGraphics.DrawLine(myPen, scaledPrevPoint[0], scaledPrevPoint[1], scaledCurrentPoint[0], scaledCurrentPoint[1]);
+                    myPen.Dispose();
+                    formGraphics.Dispose();
 
-                //if (!isFirstTimeRead)
-                //formGraphics.DrawLine(pen, scaledPrevPoint[0], scaledPrevPoint[1], scaledCurrentPoint[0], scaledCurrentPoint[1]);
-                xtempPrev = xCoord;
-                ytempPrev = yCoord;
-                //tag0.Location = new Point(scaledCurrentPoint[0], scaledCurrentPoint[1]);
-                //zCoord = zCoordCurrent * (modifiedAlpha) + zCoord * (1 - modifiedAlpha);
-                isFirstTimeRead = false;
-                //double[] coord = new double[2];
-                //coord[0] = xCoord;
-                //coord[1] = yCoord;
-                //int[] scaledPoint = scalePoint(coord);
-                //tag0.Location = new Point(scaledPoint[0], scaledPoint[1]);
-
+                    //if (!isFirstTimeRead)
+                    //formGraphics.DrawLine(pen, scaledPrevPoint[0], scaledPrevPoint[1], scaledCurrentPoint[0], scaledCurrentPoint[1]);
+                    xtempPrev = xCoord;
+                    ytempPrev = yCoord;
+                    //tag0.Location = new Point(scaledCurrentPoint[0], scaledCurrentPoint[1]);
+                    //zCoord = zCoordCurrent * (modifiedAlpha) + zCoord * (1 - modifiedAlpha);
+                    isFirstTimeRead = false;
+                    //double[] coord = new double[2];
+                    //coord[0] = xCoord;
+                    //coord[1] = yCoord;
+                    //int[] scaledPoint = scalePoint(coord);
+                    //tag0.Location = new Point(scaledPoint[0], scaledPoint[1]);
+                }
             }
         }
 
         private void button2_Click(object sender, EventArgs e)
         {
+            sp.Write("lep\r");
+            System.Threading.Thread.Sleep(1000);
+            sp.DiscardInBuffer();
+            sp.DataReceived -= new SerialDataReceivedEventHandler(dataReceived);
             sp.Close();
             _continue = false;
         }
